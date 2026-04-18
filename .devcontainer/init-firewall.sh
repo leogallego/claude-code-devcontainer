@@ -2,6 +2,22 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+if [ "${1:-}" = "--disable" ]; then
+    echo "Disabling firewall..."
+    nft flush ruleset 2>/dev/null || { iptables -F; iptables -P INPUT ACCEPT; iptables -P OUTPUT ACCEPT; iptables -P FORWARD ACCEPT; }
+    echo "Firewall disabled — all traffic allowed"
+    exit 0
+fi
+
+if [ "${1:-}" = "--status" ]; then
+    if [ -f /run/.containerenv ] || [ "${container:-}" = "podman" ]; then
+        nft list ruleset 2>/dev/null || echo "No nftables rules"
+    else
+        iptables -L -n 2>/dev/null || echo "No iptables rules"
+    fi
+    exit 0
+fi
+
 RUNTIME="docker"
 if [ "${container:-}" = "podman" ] || [ "${container:-}" = "oci" ] || \
    [ -f /run/.containerenv ]; then
@@ -40,30 +56,100 @@ while read -r cidr; do
     ALLOWED_ENTRIES+=("$cidr")
 done < <(echo "$gh_ranges" | jq -r '(.web + .api + .git)[]' | aggregate -q)
 
-for domain in \
-    "registry.npmjs.org" \
-    "api.anthropic.com" \
-    "sentry.io" \
-    "statsig.anthropic.com" \
-    "statsig.com" \
-    "marketplace.visualstudio.com" \
-    "vscode.blob.core.windows.net" \
-    "update.code.visualstudio.com"; do
+VERTEX_REGION=$(cat /tmp/.cloud_ml_region 2>/dev/null || echo "")
+if [ -n "$VERTEX_REGION" ]; then
+    echo "Fetching Google Cloud IP ranges for Vertex AI (region: $VERTEX_REGION)..."
+    gcloud_ranges=$(curl -s https://www.gstatic.com/ipranges/cloud.json)
+    if [ -z "$gcloud_ranges" ]; then
+        echo "WARNING: Failed to fetch Google Cloud IP ranges"
+    else
+        while read -r cidr; do
+            echo "Adding Google Cloud range $cidr"
+            ALLOWED_ENTRIES+=("$cidr")
+        done < <(echo "$gcloud_ranges" | jq -r --arg region "$VERTEX_REGION" \
+            '.prefixes[] | select(.ipv4Prefix and (.scope | test("global|" + $region))) | .ipv4Prefix')
+    fi
+
+fi
+
+REQUIRED_DOMAINS=(
+    "registry.npmjs.org"
+    "api.anthropic.com"
+    "sentry.io"
+    "statsig.anthropic.com"
+    "statsig.com"
+    "marketplace.visualstudio.com"
+    "vscode.blob.core.windows.net"
+    "update.code.visualstudio.com"
+)
+
+OPTIONAL_DOMAINS=(
+    # VS Code official (code.visualstudio.com/docs/setup/network)
+    "vsmarketplacebadges.dev"
+    "default.exp-tas.com"
+    "vscode.download.prss.microsoft.com"
+    "download.visualstudio.microsoft.com"
+    # Wildcard CDN — resolve a known subdomain to get the CDN IPs
+    # *.gallery.vsassets.io (extension downloads)
+    "redhat.gallery.vsassets.io"
+    # *.gallerycdn.vsassets.io (extension assets)
+    "redhat.gallerycdn.vsassets.io"
+    # *.vscode-cdn.net (VS Code CDN)
+    "vscode.vscode-cdn.net"
+    # *.vscode-unpkg.net (web extensions)
+    "openvsxorg.vscode-unpkg.net"
+    # Google OAuth (token refresh for Vertex AI)
+    "oauth2.googleapis.com"
+    # Python extension — pypi.org
+    "pypi.org"
+    "files.pythonhosted.org"
+    # YAML extension — schema store
+    "www.schemastore.org"
+    "json.schemastore.org"
+)
+
+resolve_domain() {
+    local domain="$1"
+    local required="$2"
     echo "Resolving $domain..."
+    local ips
     ips=$(dig +noall +answer A "$domain" | awk '$4 == "A" {print $5}')
     if [ -z "$ips" ]; then
-        echo "ERROR: Failed to resolve $domain"
-        exit 1
+        ips=$(dig +noall +answer CNAME "$domain" | awk '{print $NF}' | while read -r cname; do
+            dig +noall +answer A "$cname" | awk '$4 == "A" {print $5}'
+        done)
+    fi
+    if [ -z "$ips" ]; then
+        if [ "$required" = "true" ]; then
+            echo "ERROR: Failed to resolve $domain"
+            exit 1
+        else
+            echo "WARNING: Failed to resolve $domain (optional, skipping)"
+            return
+        fi
     fi
 
     while read -r ip; do
         if [[ ! "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-            echo "ERROR: Invalid IP from DNS for $domain: $ip"
-            exit 1
+            if [ "$required" = "true" ]; then
+                echo "ERROR: Invalid IP from DNS for $domain: $ip"
+                exit 1
+            else
+                echo "WARNING: Invalid IP from DNS for $domain: $ip (skipping)"
+                continue
+            fi
         fi
         echo "Adding $ip for $domain"
         ALLOWED_ENTRIES+=("$ip")
     done < <(echo "$ips")
+}
+
+for domain in "${REQUIRED_DOMAINS[@]}"; do
+    resolve_domain "$domain" true
+done
+
+for domain in "${OPTIONAL_DOMAINS[@]}"; do
+    resolve_domain "$domain" false
 done
 
 HOST_IP=$(ip route | awk '/default/{print $3}')
@@ -82,10 +168,11 @@ if [ "$RUNTIME" = "podman" ]; then
     nft flush ruleset 2>/dev/null || true
 
     nft add table inet firewall
-    nft add set inet firewall allowed_domains '{ type ipv4_addr ; flags interval ; }'
+    nft add set inet firewall allowed_domains '{ type ipv4_addr ; flags interval ; auto-merge ; }'
 
+    readarray -t UNIQUE_ENTRIES < <(printf '%s\n' "${ALLOWED_ENTRIES[@]}" | sort -u)
     elements=""
-    for entry in "${ALLOWED_ENTRIES[@]}"; do
+    for entry in "${UNIQUE_ENTRIES[@]}"; do
         elements+="${elements:+, }${entry}"
     done
     if [ -n "$elements" ]; then
@@ -139,7 +226,7 @@ if [ "$RUNTIME" = "podman" ]; then
 
     nft add rule inet firewall output ct state established,related accept
     nft add rule inet firewall output ip daddr @allowed_domains accept
-    nft add rule inet firewall output reject with icmp type admin-prohibited
+    nft add rule inet firewall output log prefix '"BLOCKED: "' counter reject with icmp type admin-prohibited
 
 else
     echo "Setting up iptables firewall (Docker)..."
@@ -169,7 +256,8 @@ else
     iptables -A OUTPUT -o lo -j ACCEPT
 
     ipset create allowed-domains hash:net
-    for entry in "${ALLOWED_ENTRIES[@]}"; do
+    readarray -t UNIQUE_ENTRIES < <(printf '%s\n' "${ALLOWED_ENTRIES[@]}" | sort -u)
+    for entry in "${UNIQUE_ENTRIES[@]}"; do
         ipset add allowed-domains "$entry"
     done
 
