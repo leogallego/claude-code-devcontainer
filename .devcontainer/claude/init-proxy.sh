@@ -72,7 +72,6 @@ nft add table inet proxy_sandbox
 nft add chain inet proxy_sandbox input '{ type filter hook input priority 0 ; policy drop ; }'
 nft add rule inet proxy_sandbox input iif lo accept
 nft add rule inet proxy_sandbox input ct state established,related accept
-nft add rule inet proxy_sandbox input udp sport 53 accept
 nft add rule inet proxy_sandbox input ip saddr "$HOST_NETWORK" accept
 while IFS= read -r net; do
     [ -z "$net" ] && continue

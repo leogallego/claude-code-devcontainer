@@ -1,30 +1,30 @@
 # Claude Code
-api\.anthropic\.com
-sentry\.io
-statsig\.anthropic\.com
-statsig\.com
+^api\.anthropic\.com$
+^sentry\.io$
+^statsig\.anthropic\.com$
+^statsig\.com$
 
 # GitHub
-github\.com
-api\.github\.com
-.*\.githubusercontent\.com
+^github\.com$
+^api\.github\.com$
+^.*\.githubusercontent\.com$
 
 # npm
-registry\.npmjs\.org
+^registry\.npmjs\.org$
 
 # VS Code marketplace and CDN
-marketplace\.visualstudio\.com
-vscode\.blob\.core\.windows\.net
-update\.code\.visualstudio\.com
-.*\.gallery\.vsassets\.io
-.*\.gallerycdn\.vsassets\.io
-.*\.vscode-cdn\.net
-.*\.vscode-unpkg\.net
+^marketplace\.visualstudio\.com$
+^vscode\.blob\.core\.windows\.net$
+^update\.code\.visualstudio\.com$
+^.*\.gallery\.vsassets\.io$
+^.*\.gallerycdn\.vsassets\.io$
+^.*\.vscode-cdn\.net$
+^.*\.vscode-unpkg\.net$
 
 # Python (pip)
-pypi\.org
-files\.pythonhosted\.org
+^pypi\.org$
+^files\.pythonhosted\.org$
 
 # Vertex AI (optional — needed if using Google Cloud)
-oauth2\.googleapis\.com
-.*-aiplatform\.googleapis\.com
+^oauth2\.googleapis\.com$
+^.*-aiplatform\.googleapis\.com$
