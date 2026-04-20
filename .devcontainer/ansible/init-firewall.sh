@@ -27,7 +27,7 @@ echo "Container runtime: $RUNTIME"
 
 if [ "$RUNTIME" = "podman" ] && ! command -v nft >/dev/null 2>&1; then
     echo "Installing nftables (iptables-nft is not enforced under pasta)..."
-    apt-get update -qq && apt-get install -y -qq nftables >/dev/null 2>&1
+    dnf install -y -q nftables >/dev/null 2>&1
 fi
 
 # === Collect allowed IPs while network is unrestricted ===

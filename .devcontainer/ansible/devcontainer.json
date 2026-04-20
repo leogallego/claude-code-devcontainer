@@ -31,12 +31,28 @@
         "ms-python.vscode-pylance",
         "ms-python.debugpy",
         "ms-python.black-formatter",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "asciidoctor.asciidoctor-vscode",
+        "ms-vscode-remote.remote-containers"
       ],
       "settings": {
         "editor.formatOnSave": true,
+        "python.defaultInterpreterPath": "/usr/bin/python3",
         "python.formatting.provider": "black",
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter"
+        },
+        "black-formatter.path": ["/usr/local/bin/black"],
         "ansible.python.interpreterPath": "/usr/bin/python3",
+        "ansible.ansible.path": "/usr/local/bin/ansible",
+        "ansible.validation.lint.path": "/usr/local/bin/ansible-lint",
+        "ansible.validation.lint.enabled": true,
+        "ansible.ansibleNavigator.path": "/usr/local/bin/ansible-navigator",
+        "ansible.executionEnvironment.enabled": false,
+        "ansible.executionEnvironment.image": "ghcr.io/ansible/community-ee-base:latest",
+        "yaml.schemas": {
+          "https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json": ["playbooks/*.yml", "playbooks/*.yaml", "**/tasks/*.yml", "**/tasks/*.yaml"]
+        },
         "terminal.integrated.defaultProfile.linux": "bash",
         "terminal.integrated.profiles.linux": {
           "bash": {
@@ -63,6 +79,7 @@
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
-  "postStartCommand": "echo ${CLOUD_ML_REGION} > /tmp/.cloud_ml_region && /usr/local/bin/init-firewall.sh",
+  "postStartCommand": "echo ${CLOUD_ML_REGION} > /tmp/.cloud_ml_region",
+  "postAttachCommand": "echo 'Waiting 60 seconds for VS Code extensions to install before enabling firewall...' && sleep 60 && /usr/local/bin/init-firewall.sh && echo 'If needed, disable firewall with: sudo /usr/local/bin/init-firewall.sh --disable'",
   "waitFor": "postStartCommand"
 }
