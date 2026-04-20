@@ -75,11 +75,14 @@
     "CLAUDE_CODE_USE_VERTEX": "${localEnv:CLAUDE_CODE_USE_VERTEX}",
     "ANTHROPIC_VERTEX_PROJECT_ID": "${localEnv:ANTHROPIC_VERTEX_PROJECT_ID}",
     "CLOUD_ML_REGION": "${localEnv:CLOUD_ML_REGION}",
-    "GH_TOKEN": "${localEnv:GH_TOKEN}"
+    "GH_TOKEN": "${localEnv:GH_TOKEN}",
+    "HTTP_PROXY": "http://127.0.0.1:8888",
+    "HTTPS_PROXY": "http://127.0.0.1:8888",
+    "NO_PROXY": "localhost,127.0.0.1"
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
   "postStartCommand": "echo ${CLOUD_ML_REGION} > /tmp/.cloud_ml_region",
-  "postAttachCommand": "echo 'Firewall disabled by default. Enable with: sudo /usr/local/bin/init-firewall.sh'",
+  "postAttachCommand": "echo 'Network sandbox disabled by default. Enable proxy sandbox: sudo /usr/local/bin/init-proxy.sh | Enable IP firewall: sudo /usr/local/bin/init-firewall.sh'",
   "waitFor": "postStartCommand"
 }
