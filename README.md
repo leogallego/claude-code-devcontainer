@@ -1,12 +1,38 @@
 # Devcontainer Base Repository
 
-A base devcontainer configuration for creating consistent development environments with Podman compatibility.
+A collection of devcontainer configurations for creating consistent development environments with Podman compatibility and Claude Code integration.
+
+## Available Configurations
+
+### 🤖 Claude (Node.js)
+**Path:** `.devcontainer/claude/`
+
+Minimal setup for Node.js development with Claude Code:
+- Node.js 20
+- Claude Code CLI
+- ESLint, Prettier, GitLens
+- Firewall configuration for secure networking
+- Git Delta for enhanced diffs
+- Zsh with powerlevel10k
+
+### 🎭 Ansible Development
+**Path:** `.devcontainer/ansible/`
+
+Full Ansible development environment with Claude Code:
+- Based on `ghcr.io/ansible/community-ansible-dev-tools` (Fedora)
+- Python 3.11 + pip
+- Ansible, ansible-lint, molecule
+- Claude Code CLI
+- All Ansible VS Code extensions (RedHat Ansible, YAML, Python)
+- Firewall configuration
 
 ## Features
 
-- Podman-compatible container setup
+- Podman/Docker compatible
 - Firewall configuration for network connectivity
-- Ready to use as a template for new projects
+- Vertex AI support (optional)
+- Multiple configurations for different use cases
+- Ready to use as templates for new projects
 
 ## Usage
 
@@ -66,11 +92,16 @@ git init
 **Pros:** Works without GitHub features  
 **Best for:** Self-hosted git or GitLab/Bitbucket
 
-## Configuration
+## Selecting a Configuration
 
-The devcontainer includes:
-- [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json) - Main devcontainer configuration
-- [`.devcontainer/init-firewall.sh`](.devcontainer/init-firewall.sh) - Firewall initialization script
+When you open this project in VS Code, it will prompt you to select which devcontainer configuration to use:
+- **Claude (Node.js)** - For general Node.js/JavaScript development
+- **Ansible Development** - For Ansible/Python infrastructure work
+
+Each configuration includes:
+- `devcontainer.json` - Container configuration
+- `Dockerfile` - Image build instructions  
+- `init-firewall.sh` - Firewall initialization script
 
 ## Requirements
 

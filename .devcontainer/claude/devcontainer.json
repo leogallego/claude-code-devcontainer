@@ -1,5 +1,5 @@
 {
-  "name": "Claude Code Sandbox",
+  "name": "Claude Code (Node.js)",
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
@@ -17,12 +17,6 @@
     "vscode": {
       "extensions": [
         "anthropic.claude-code",
-        "redhat.ansible",
-        "redhat.vscode-yaml",
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "ms-python.debugpy",
-        "ms-python.vscode-python-envs",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "eamodio.gitlens"
@@ -58,7 +52,8 @@
     "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
     "CLAUDE_CODE_USE_VERTEX": "${localEnv:CLAUDE_CODE_USE_VERTEX}",
     "ANTHROPIC_VERTEX_PROJECT_ID": "${localEnv:ANTHROPIC_VERTEX_PROJECT_ID}",
-    "CLOUD_ML_REGION": "${localEnv:CLOUD_ML_REGION}"
+    "CLOUD_ML_REGION": "${localEnv:CLOUD_ML_REGION}",
+    "GH_TOKEN": "${localEnv:GH_TOKEN}"
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
