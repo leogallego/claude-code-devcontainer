@@ -6,7 +6,7 @@ ENV TZ="$TZ"
 ARG CLAUDE_CODE_VERSION=latest
 
 # Install Node.js, sudo, and firewall dependencies (Fedora uses dnf)
-RUN dnf install -y nodejs npm sudo nftables iptables ipset curl jq bind-utils iproute aggregate tinyproxy && dnf clean all
+RUN dnf install -y nodejs npm sudo nftables iptables ipset curl jq bind-utils iproute aggregate tinyproxy procps-ng && dnf clean all
 
 # Install Claude Code
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}

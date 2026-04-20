@@ -63,6 +63,12 @@
       }
     }
   },
+  "portsAttributes": {
+    "8888": {
+      "onAutoForward": "ignore",
+      "label": "Tinyproxy (internal)"
+    }
+  },
   "remoteUser": "root",
   "mounts": [
     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
