@@ -25,6 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   jq \
   nano \
   vim \
+  tinyproxy \
+  nftables \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Ensure default node user has access to /usr/local/share
@@ -88,4 +90,13 @@ USER root
 RUN chmod +x /usr/local/bin/init-firewall.sh && \
   echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
   chmod 0440 /etc/sudoers.d/node-firewall
+
+# Copy and set up proxy sandbox
+COPY tinyproxy.conf /etc/tinyproxy/tinyproxy.conf
+COPY proxy-allowlist.txt /etc/tinyproxy/allowlist
+RUN mkdir -p /var/log/tinyproxy && chown tinyproxy:tinyproxy /var/log/tinyproxy
+COPY init-proxy.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/init-proxy.sh && \
+  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-proxy.sh" > /etc/sudoers.d/node-proxy && \
+  chmod 0440 /etc/sudoers.d/node-proxy
 USER node
