@@ -11,7 +11,7 @@ Minimal setup for Node.js development with Claude Code:
 - Node.js 20
 - Claude Code CLI
 - ESLint, Prettier, GitLens
-- Firewall configuration for secure networking
+- Proxy sandbox and firewall configuration for secure networking
 - Git Delta for enhanced diffs
 - Zsh with powerlevel10k
 
@@ -24,12 +24,13 @@ Full Ansible development environment with Claude Code:
 - Ansible, ansible-lint, molecule
 - Claude Code CLI
 - All Ansible VS Code extensions (RedHat Ansible, YAML, Python)
-- Firewall configuration
+- Proxy sandbox and firewall configuration
 
 ## Features
 
 - Podman/Docker compatible
-- Firewall configuration for network connectivity
+- Proxy sandbox (Tinyproxy + nftables) for domain-level network filtering
+- IP firewall fallback for network connectivity
 - Vertex AI support (optional)
 - Multiple configurations for different use cases
 - Ready to use as templates for new projects
@@ -102,6 +103,55 @@ Each configuration includes:
 - `devcontainer.json` - Container configuration
 - `Dockerfile` - Image build instructions  
 - `init-firewall.sh` - Firewall initialization script
+- `init-proxy.sh` - Proxy sandbox initialization script
+
+## Network Sandbox
+
+Two network isolation options are available:
+
+### Proxy Sandbox (Recommended)
+
+Uses Tinyproxy as a domain-filtering forward proxy with nftables enforcement:
+- Tinyproxy filters HTTPS CONNECT requests by domain name
+- nftables rules force all traffic through the proxy — direct connections are blocked
+- Domain allowlist at `/etc/tinyproxy/allowlist` — one regex pattern per line
+- All proxy activity logged to `/var/log/tinyproxy/tinyproxy.log`
+
+| Devcontainer | Default |
+|-------------|---------|
+| Claude (Node.js) | Enabled (runs at startup) |
+| Ansible | Disabled (opt-in) |
+
+**Commands:**
+```bash
+# Enable proxy sandbox
+sudo /usr/local/bin/init-proxy.sh
+
+# Check status
+sudo /usr/local/bin/init-proxy.sh --status
+
+# Disable proxy sandbox
+sudo /usr/local/bin/init-proxy.sh --disable
+```
+
+**Adding domains to the allowlist:**
+
+Edit `/etc/tinyproxy/allowlist` inside the container and restart tinyproxy:
+```bash
+echo 'newdomain\.example\.com' >> /etc/tinyproxy/allowlist
+sudo pkill tinyproxy && sudo tinyproxy -c /etc/tinyproxy/tinyproxy.conf
+```
+
+To make changes permanent, edit `proxy-allowlist.txt` in the devcontainer directory and rebuild.
+
+### IP Firewall (Legacy)
+
+The original IP-based firewall resolves domain names to IPs at startup. Kept as a fallback:
+```bash
+sudo /usr/local/bin/init-firewall.sh          # Enable
+sudo /usr/local/bin/init-firewall.sh --status  # Check status
+sudo /usr/local/bin/init-firewall.sh --disable # Disable
+```
 
 ## Requirements
 
@@ -120,7 +170,11 @@ Modify the devcontainer configuration to add:
 
 ## Troubleshooting
 
-If you encounter network connectivity issues, ensure the firewall initialization script has proper permissions and runs during container startup.
+**Network connectivity issues:**
+- Check proxy status: `sudo /usr/local/bin/init-proxy.sh --status`
+- Check proxy logs: `cat /var/log/tinyproxy/tinyproxy.log`
+- Temporarily disable sandbox: `sudo /usr/local/bin/init-proxy.sh --disable`
+- If a domain is blocked, add it to `/etc/tinyproxy/allowlist` and restart tinyproxy
 
 ## License
 
