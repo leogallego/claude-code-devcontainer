@@ -66,6 +66,6 @@
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
-  "postStartCommand": "echo ${CLOUD_ML_REGION} > /tmp/.cloud_ml_region && sudo /usr/local/bin/init-proxy.sh",
+  "postStartCommand": "echo ${CLOUD_ML_REGION} > /tmp/.cloud_ml_region && sudo tinyproxy -c /etc/tinyproxy/tinyproxy-passthrough.conf && (sleep 60 && sudo /usr/local/bin/init-proxy.sh > /tmp/proxy-enable.log 2>&1) &",
   "waitFor": "postStartCommand"
 }

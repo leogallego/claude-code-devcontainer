@@ -22,6 +22,7 @@ RUN chmod +x /usr/local/bin/init-firewall.sh && \
 
 # Copy and set up proxy sandbox
 COPY tinyproxy.conf /etc/tinyproxy/tinyproxy.conf
+COPY tinyproxy-passthrough.conf /etc/tinyproxy/tinyproxy-passthrough.conf
 COPY proxy-allowlist.txt /etc/tinyproxy/allowlist
 RUN mkdir -p /var/log/tinyproxy && chown tinyproxy:tinyproxy /var/log/tinyproxy
 COPY init-proxy.sh /usr/local/bin/

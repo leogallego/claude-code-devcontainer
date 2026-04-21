@@ -5,8 +5,8 @@ IFS=$'\n\t'
 PROXY_PORT=8888
 PROXY_URL="http://127.0.0.1:${PROXY_PORT}"
 TINYPROXY_CONF="/etc/tinyproxy/tinyproxy.conf"
+TINYPROXY_PASSTHROUGH_CONF="/etc/tinyproxy/tinyproxy-passthrough.conf"
 TINYPROXY_LOG="/var/log/tinyproxy/tinyproxy.log"
-PROXY_PROFILE="/etc/profile.d/proxy.sh"
 
 is_tinyproxy_running() {
     pidof tinyproxy >/dev/null 2>&1
@@ -16,13 +16,26 @@ tinyproxy_pid() {
     pidof tinyproxy 2>/dev/null | awk '{print $1}'
 }
 
+restart_tinyproxy() {
+    local conf="$1"
+    mkdir -p /var/log/tinyproxy
+    chown tinyproxy:tinyproxy /var/log/tinyproxy
+    kill "$(tinyproxy_pid)" 2>/dev/null || true
+    sleep 0.5
+    tinyproxy -c "$conf"
+    sleep 0.5
+    if ! is_tinyproxy_running; then
+        echo "ERROR: tinyproxy failed to start"
+        cat "$TINYPROXY_LOG" 2>/dev/null || true
+        return 1
+    fi
+}
+
 if [ "${1:-}" = "--disable" ]; then
     echo "Disabling proxy sandbox..."
-    kill "$(tinyproxy_pid)" 2>/dev/null || true
     nft flush ruleset 2>/dev/null || true
-    rm -f "$PROXY_PROFILE"
-    echo "Proxy sandbox disabled — all traffic allowed"
-    echo "Run: unset HTTP_PROXY HTTPS_PROXY NO_PROXY (or open a new terminal)"
+    restart_tinyproxy "$TINYPROXY_PASSTHROUGH_CONF"
+    echo "Proxy sandbox disabled — proxy running in passthrough mode (no filtering)"
     exit 0
 fi
 
@@ -30,18 +43,15 @@ if [ "${1:-}" = "--status" ]; then
     echo "=== Tinyproxy ==="
     if is_tinyproxy_running; then
         echo "Status: running (PID $(tinyproxy_pid))"
+        if nft list table inet proxy_sandbox >/dev/null 2>&1; then
+            echo "Mode: FILTERED (domain allowlist active)"
+        else
+            echo "Mode: PASSTHROUGH (no filtering)"
+        fi
         echo "Log (last 10 lines):"
         tail -10 "$TINYPROXY_LOG" 2>/dev/null || echo "  (no log file)"
     else
         echo "Status: not running"
-    fi
-    echo ""
-    echo "=== Proxy env vars ==="
-    if [ -f "$PROXY_PROFILE" ]; then
-        echo "Profile: $PROXY_PROFILE (active for new shells)"
-        cat "$PROXY_PROFILE"
-    else
-        echo "Profile: not set"
     fi
     echo ""
     echo "=== nftables ==="
@@ -51,40 +61,14 @@ fi
 
 echo "Setting up proxy sandbox..."
 
-# Ensure log directory exists
-mkdir -p /var/log/tinyproxy
-chown tinyproxy:tinyproxy /var/log/tinyproxy
-
-# Stop any existing tinyproxy
-kill "$(tinyproxy_pid)" 2>/dev/null || true
-sleep 0.5
-
-# Start tinyproxy
-echo "Starting tinyproxy on 127.0.0.1:${PROXY_PORT}..."
-tinyproxy -c "$TINYPROXY_CONF"
-
-# Verify tinyproxy is running
-sleep 0.5
-if ! is_tinyproxy_running; then
-    echo "ERROR: tinyproxy failed to start"
-    cat "$TINYPROXY_LOG" 2>/dev/null || true
-    exit 1
-fi
+# Restart tinyproxy with filtering config
+echo "Starting tinyproxy on 127.0.0.1:${PROXY_PORT} (filtered mode)..."
+restart_tinyproxy "$TINYPROXY_CONF"
 echo "Tinyproxy started (PID $(tinyproxy_pid))"
-
-# === Write proxy env vars for shells ===
-cat > "$PROXY_PROFILE" <<ENVEOF
-export HTTP_PROXY="${PROXY_URL}"
-export HTTPS_PROXY="${PROXY_URL}"
-export NO_PROXY="localhost,127.0.0.1"
-ENVEOF
-chmod 644 "$PROXY_PROFILE"
-echo "Proxy env vars written to ${PROXY_PROFILE}"
 
 # === Apply nftables rules ===
 echo "Applying nftables rules..."
 
-# Detect host network
 HOST_IP=$(ip route | awk '/default/{print $3}')
 if [ -z "$HOST_IP" ]; then
     echo "ERROR: Failed to detect host IP"
@@ -133,9 +117,6 @@ echo "nftables rules applied"
 # === Verification ===
 echo "Verifying proxy sandbox..."
 
-export HTTP_PROXY="${PROXY_URL}"
-export HTTPS_PROXY="${PROXY_URL}"
-
 if curl --proxy "${PROXY_URL}" --connect-timeout 5 https://example.com >/dev/null 2>&1; then
     echo "ERROR: Verification failed — proxy allowed https://example.com"
     exit 1
@@ -158,5 +139,4 @@ else
 fi
 
 echo ""
-echo "Proxy sandbox active — all traffic routed through tinyproxy on 127.0.0.1:${PROXY_PORT}"
-echo "Run: source ${PROXY_PROFILE} (or open a new terminal to apply proxy env vars)"
+echo "Proxy sandbox active — all traffic filtered through tinyproxy on 127.0.0.1:${PROXY_PORT}"
