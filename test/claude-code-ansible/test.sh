@@ -1,6 +1,6 @@
 #!/bin/bash
 cd $(dirname "$0")
-source test-utils/test-utils.sh
+source ../test-utils/test-utils.sh
 
 check "ansible is available" ansible --version
 check "ansible-lint is available" ansible-lint --version

@@ -1,6 +1,6 @@
 #!/bin/bash
 cd $(dirname "$0")
-source test-utils/test-utils.sh
+source ../test-utils/test-utils.sh
 
 check "node is available" node --version
 check "claude code is installed" claude --version
