@@ -4,8 +4,9 @@ ARG TZ
 ENV TZ="$TZ"
 
 ARG CLAUDE_CODE_VERSION=latest
+ARG ENABLE_PROXY=true
 
-# Install basic development tools and iptables/ipset
+# Install basic development tools and networking
 RUN apt-get update && apt-get install -y --no-install-recommends \
   less \
   git \
@@ -35,13 +36,12 @@ RUN mkdir -p /usr/local/share/npm-global && \
 
 ARG USERNAME=node
 
-# Persist bash history.
+# Persist bash history
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   && mkdir /commandhistory \
   && touch /commandhistory/.bash_history \
   && chown -R $USERNAME /commandhistory
 
-# Set `DEVCONTAINER` environment variable to help with orientation
 ENV DEVCONTAINER=true
 
 # Create workspace and config directories and set permissions
@@ -56,21 +56,14 @@ RUN ARCH=$(dpkg --print-architecture) && \
   sudo dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
 
-# Set up non-root user
 USER node
 
-# Install global packages
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 ENV PATH=$PATH:/usr/local/share/npm-global/bin
-
-# Set the default shell to zsh rather than sh
 ENV SHELL=/bin/zsh
-
-# Set the default editor and visual
 ENV EDITOR=nano
 ENV VISUAL=nano
 
-# Default powerline10k theme
 ARG ZSH_IN_DOCKER_VERSION=1.2.0
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v${ZSH_IN_DOCKER_VERSION}/zsh-in-docker.sh)" -- \
   -p git \
@@ -80,9 +73,7 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   -x
 
-# Install Claude
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
-
 
 # Copy and set up firewall script
 COPY init-firewall.sh /usr/local/bin/
@@ -100,4 +91,8 @@ COPY init-proxy.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/init-proxy.sh && \
   echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-proxy.sh" > /etc/sudoers.d/node-proxy && \
   chmod 0440 /etc/sudoers.d/node-proxy
+
+# Proxy toggle: create sentinel file when enabled
+RUN if [ "${ENABLE_PROXY}" = "true" ]; then touch /etc/tinyproxy/.proxy-enabled; fi
+
 USER node

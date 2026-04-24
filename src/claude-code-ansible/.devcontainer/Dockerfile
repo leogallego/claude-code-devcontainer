@@ -4,14 +4,14 @@ ARG TZ
 ENV TZ="$TZ"
 
 ARG CLAUDE_CODE_VERSION=latest
+ARG ENABLE_PROXY=true
 
-# Install Node.js, sudo, and firewall dependencies (Fedora uses dnf)
+# Install Node.js, sudo, and networking dependencies (Fedora uses dnf)
 RUN dnf install -y nodejs npm sudo nftables iptables ipset curl jq bind-utils iproute aggregate tinyproxy procps-ng gh && dnf clean all
 
 # Install Claude Code
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
-# Set `DEVCONTAINER` environment variable to help with orientation
 ENV DEVCONTAINER=true
 
 # Copy and set up firewall script
@@ -29,5 +29,8 @@ COPY init-proxy.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/init-proxy.sh && \
   echo "root ALL=(root) NOPASSWD: /usr/local/bin/init-proxy.sh" > /etc/sudoers.d/root-proxy && \
   chmod 0440 /etc/sudoers.d/root-proxy
+
+# Proxy toggle: create sentinel file when enabled
+RUN if [ "${ENABLE_PROXY}" = "true" ]; then touch /etc/tinyproxy/.proxy-enabled; fi
 
 WORKDIR /workspace
