@@ -33,4 +33,8 @@ RUN chmod +x /usr/local/bin/init-proxy.sh && \
 # Proxy toggle: create sentinel file when enabled
 RUN if [ "${ENABLE_PROXY}" = "true" ]; then touch /etc/tinyproxy/.proxy-enabled; fi
 
+# Copy and set up registry auth script
+COPY init-registry-auth.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/init-registry-auth.sh
+
 WORKDIR /workspace
