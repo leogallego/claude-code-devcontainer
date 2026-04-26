@@ -16,7 +16,7 @@
       "type": "string",
       "description": "Container timezone (TZ)",
       "proposals": ["America/Los_Angeles", "America/New_York", "Europe/London", "UTC"],
-      "default": "America/Los_Angeles"
+      "default": "America/Argentina/Buenos_Aires"
     },
     "enableProxy": {
       "type": "boolean",
