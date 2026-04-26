@@ -73,8 +73,7 @@
   "remoteUser": "root",
   "mounts": [
     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
-    "source=claude-code-config-${devcontainerId},target=/root/.claude,type=volume",
-    "source=${localEnv:HOME}/.config/containers/auth.json,target=/root/.config/containers/auth.json,type=bind,readonly"
+    "source=claude-code-config-${devcontainerId},target=/root/.claude,type=volume"
   ],
   "containerEnv": {
     "NODE_OPTIONS": "--max-old-space-size=4096",
