@@ -92,7 +92,6 @@
     "HTTPS_PROXY": "http://127.0.0.1:8888",
     "NO_PROXY": "localhost,127.0.0.1"
   },
-  "initializeCommand": "mkdir -p ${HOME}/.config/containers && touch ${HOME}/.config/containers/auth.json",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
   "postStartCommand": "echo ${CLOUD_ML_REGION} > /tmp/.cloud_ml_region && /usr/local/bin/init-registry-auth.sh && tinyproxy -c /etc/tinyproxy/tinyproxy-passthrough.conf && if [ -f /etc/tinyproxy/.proxy-enabled ]; then (sleep 60 && /usr/local/bin/init-proxy.sh > /tmp/proxy-enable.log 2>&1) & fi",

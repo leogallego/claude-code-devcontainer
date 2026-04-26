@@ -89,7 +89,7 @@ COPY proxy-allowlist.txt /etc/tinyproxy/allowlist
 RUN mkdir -p /var/log/tinyproxy && chown tinyproxy:tinyproxy /var/log/tinyproxy
 COPY init-proxy.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/init-proxy.sh && \
-  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-proxy.sh" > /etc/sudoers.d/node-proxy && \
+  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-proxy.sh, /usr/sbin/tinyproxy" > /etc/sudoers.d/node-proxy && \
   chmod 0440 /etc/sudoers.d/node-proxy
 
 # Proxy toggle: create sentinel file when enabled
