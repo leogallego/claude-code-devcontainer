@@ -3,8 +3,9 @@
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
-      "TZ": "${localEnv:TZ:America/Los_Angeles}",
-      "CLAUDE_CODE_VERSION": "latest",
+      "TZ": "${templateOption:timezone}",
+      "CLAUDE_CODE_VERSION": "${templateOption:claudeCodeVersion}",
+      "ENABLE_PROXY": "${templateOption:enableProxy}",
       "GIT_DELTA_VERSION": "0.18.2",
       "ZSH_IN_DOCKER_VERSION": "1.2.0"
     }
@@ -49,8 +50,7 @@
   "remoteUser": "node",
   "mounts": [
     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
-    "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume",
-    "source=${localEnv:HOME}/.config/gcloud,target=/home/node/.config/gcloud,type=bind,readonly"
+    "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume"
   ],
   "containerEnv": {
     "NODE_OPTIONS": "--max-old-space-size=4096",
@@ -66,6 +66,6 @@
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
-  "postStartCommand": "echo ${CLOUD_ML_REGION} > /tmp/.cloud_ml_region && sudo tinyproxy -c /etc/tinyproxy/tinyproxy-passthrough.conf && (sleep 60 && sudo /usr/local/bin/init-proxy.sh > /tmp/proxy-enable.log 2>&1) &",
+  "postStartCommand": "echo ${CLOUD_ML_REGION} > /tmp/.cloud_ml_region && sudo tinyproxy -c /etc/tinyproxy/tinyproxy-passthrough.conf && if [ -f /etc/tinyproxy/.proxy-enabled ]; then (sleep 60 && sudo /usr/local/bin/init-proxy.sh > /tmp/proxy-enable.log 2>&1) & fi",
   "waitFor": "postStartCommand"
 }

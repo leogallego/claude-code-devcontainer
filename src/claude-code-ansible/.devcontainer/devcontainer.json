@@ -3,8 +3,9 @@
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
-      "TZ": "${localEnv:TZ:America/Los_Angeles}",
-      "CLAUDE_CODE_VERSION": "latest"
+      "TZ": "${templateOption:timezone}",
+      "CLAUDE_CODE_VERSION": "${templateOption:claudeCodeVersion}",
+      "ENABLE_PROXY": "${templateOption:enableProxy}"
     }
   },
   "runArgs": [
@@ -72,8 +73,7 @@
   "remoteUser": "root",
   "mounts": [
     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
-    "source=claude-code-config-${devcontainerId},target=/root/.claude,type=volume",
-    "source=${localEnv:HOME}/.config/gcloud,target=/root/.config/gcloud,type=bind,readonly"
+    "source=claude-code-config-${devcontainerId},target=/root/.claude,type=volume"
   ],
   "containerEnv": {
     "NODE_OPTIONS": "--max-old-space-size=4096",
@@ -82,13 +82,18 @@
     "ANTHROPIC_VERTEX_PROJECT_ID": "${localEnv:ANTHROPIC_VERTEX_PROJECT_ID}",
     "CLOUD_ML_REGION": "${localEnv:CLOUD_ML_REGION}",
     "GH_TOKEN": "${localEnv:GH_TOKEN}",
+    "AH_TOKEN": "${localEnv:AH_TOKEN}",
+    "REGISTRY_REDHAT_IO_TOKEN": "${localEnv:REGISTRY_REDHAT_IO_TOKEN}",
+    "QUAY_TOKEN": "${localEnv:QUAY_TOKEN}",
+    "DOCKER_TOKEN": "${localEnv:DOCKER_TOKEN}",
+    "DOCKER_USER": "${localEnv:DOCKER_USER}",
     "HTTP_PROXY": "http://127.0.0.1:8888",
     "HTTPS_PROXY": "http://127.0.0.1:8888",
     "NO_PROXY": "localhost,127.0.0.1"
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
-  "postStartCommand": "echo ${CLOUD_ML_REGION} > /tmp/.cloud_ml_region && tinyproxy -c /etc/tinyproxy/tinyproxy-passthrough.conf && (sleep 60 && /usr/local/bin/init-proxy.sh > /tmp/proxy-enable.log 2>&1) &",
-  "postAttachCommand": "echo 'Proxy running in passthrough mode. Filtering activates ~60s after startup.\n  Status:  sudo /usr/local/bin/init-proxy.sh --status\n  Disable: sudo /usr/local/bin/init-proxy.sh --disable'",
+  "postStartCommand": "echo ${CLOUD_ML_REGION} > /tmp/.cloud_ml_region && /usr/local/bin/init-registry-auth.sh && tinyproxy -c /etc/tinyproxy/tinyproxy-passthrough.conf && if [ -f /etc/tinyproxy/.proxy-enabled ]; then (sleep 60 && /usr/local/bin/init-proxy.sh > /tmp/proxy-enable.log 2>&1) & fi",
+  "postAttachCommand": "if [ -f /etc/tinyproxy/.proxy-enabled ]; then echo 'Proxy running in passthrough mode. Filtering activates ~60s after startup.\n  Status:  sudo /usr/local/bin/init-proxy.sh --status\n  Disable: sudo /usr/local/bin/init-proxy.sh --disable'; fi",
   "waitFor": "postStartCommand"
 }

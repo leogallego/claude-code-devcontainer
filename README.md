@@ -1,181 +1,94 @@
-# Devcontainer Base Repository
+# Claude Code Dev Container Templates
 
-A collection of devcontainer configurations for creating consistent development environments with Podman compatibility and Claude Code integration.
+Dev container templates for Claude Code development environments, published to GHCR. Each template provides a pre-configured container with the Claude Code CLI, a network sandbox, and tooling tailored to a specific workflow.
 
-## Available Configurations
+## Available Templates
 
-### 🤖 Claude (Node.js)
-**Path:** `.devcontainer/claude/`
+### claude-code
 
-Minimal setup for Node.js development with Claude Code:
-- Node.js 20
+General-purpose Claude Code environment based on `node:20` (Debian). Runs as the `node` user.
+
+- Node.js 20 with Claude Code CLI
+- VS Code extensions: Claude Code, ESLint, Prettier, GitLens
+- Zsh with powerlevel10k, git-delta
+- Proxy sandbox (Tinyproxy + nftables)
+
+### claude-code-ansible
+
+Ansible development environment based on Fedora with the Ansible community dev tools image.
+
+- ansible, ansible-lint, molecule, ansible-navigator
 - Claude Code CLI
-- ESLint, Prettier, GitLens
-- Proxy sandbox and firewall configuration for secure networking
-- Git Delta for enhanced diffs
-- Zsh with powerlevel10k
-
-### 🎭 Ansible Development
-**Path:** `.devcontainer/ansible/`
-
-Full Ansible development environment with Claude Code:
-- Based on `ghcr.io/ansible/community-ansible-dev-tools` (Fedora)
-- Python 3.11 + pip
-- Ansible, ansible-lint, molecule
-- Claude Code CLI
-- All Ansible VS Code extensions (RedHat Ansible, YAML, Python)
-- Proxy sandbox and firewall configuration
-
-## Features
-
-- Podman/Docker compatible
-- Proxy sandbox (Tinyproxy + nftables) for domain-level network filtering
-- IP firewall fallback for network connectivity
-- Vertex AI support (optional)
-- Multiple configurations for different use cases
-- Ready to use as templates for new projects
+- VS Code extensions: Claude Code, Ansible, YAML, Python, GitLens, AsciiDoc
+- Proxy sandbox (Tinyproxy + nftables)
 
 ## Usage
 
-### Using This Template in New Projects
+### VS Code Command Palette
 
-Choose the approach that best fits your workflow:
+1. Open the command palette (`Ctrl+Shift+P` / `Cmd+Shift+P`).
+2. Run **Dev Containers: Add Dev Container Configuration Files...**
+3. Search for `claude-code` and select a template.
+4. Configure the template options when prompted.
+5. Reopen the folder in the container.
 
-#### Option 1: GitHub Template Repository (Recommended)
-
-1. Go to this repo's settings on GitHub → Enable "Template repository"
-2. When creating a new project, click "Use this template" on GitHub
-3. Clone your new repo and open in VS Code
-4. VS Code will prompt to reopen in container
-
-**Pros:** Clean, no git history, official GitHub feature
-
-#### Option 2: Copy `.devcontainer/` Folder
+### CLI
 
 ```bash
-# In your new project directory
-cp -r /path/to/base-repo/.devcontainer .
+# Claude Code (Node.js)
+devcontainer templates apply -t ghcr.io/leogallego/claude-code-devcontainer/claude-code
+
+# Claude Code Ansible
+devcontainer templates apply -t ghcr.io/leogallego/claude-code-devcontainer/claude-code-ansible
 ```
 
-**Pros:** Simple, explicit, easy to customize per project  
-**Best for:** One-off projects or when you want independent configs
+## Template Options
 
-#### Option 3: Git Submodule (Shared Updates)
+Both templates accept the following options:
 
-```bash
-# In your new project
-git submodule add <this-repo-url> .devcontainer
-```
-
-**Pros:** Keep base config synced across all projects  
-**Cons:** More complex to manage  
-**Best for:** When you want to propagate updates to multiple projects
-
-#### Option 4: Degit
-
-```bash
-npx degit <your-username>/<this-repo> my-new-project
-cd my-new-project
-```
-
-**Pros:** Quick, clean, no git history  
-**Best for:** If you already use degit in your workflow
-
-#### Option 5: Manual Clone
-
-```bash
-git clone <this-repo> my-new-project
-cd my-new-project
-rm -rf .git
-git init
-```
-
-**Pros:** Works without GitHub features  
-**Best for:** Self-hosted git or GitLab/Bitbucket
-
-## Selecting a Configuration
-
-When you open this project in VS Code, it will prompt you to select which devcontainer configuration to use:
-- **Claude (Node.js)** - For general Node.js/JavaScript development
-- **Ansible Development** - For Ansible/Python infrastructure work
-
-Each configuration includes:
-- `devcontainer.json` - Container configuration
-- `Dockerfile` - Image build instructions  
-- `init-firewall.sh` - Firewall initialization script
-- `init-proxy.sh` - Proxy sandbox initialization script
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `claudeCodeVersion` | string | `latest` | Version of the Claude Code CLI to install. |
+| `timezone` | string | `America/Los_Angeles` | Container timezone (TZ identifier). |
+| `enableProxy` | boolean | `true` | Enable the Tinyproxy + nftables network sandbox at startup. |
 
 ## Network Sandbox
 
-Two network isolation options are available:
-
-### Proxy Sandbox (Recommended)
-
-Uses Tinyproxy as a domain-filtering forward proxy with nftables enforcement:
-- Tinyproxy filters HTTPS CONNECT requests by domain name
-- nftables rules force all traffic through the proxy — direct connections are blocked
-- Domain allowlist at `/etc/tinyproxy/allowlist` — one regex pattern per line
-- All proxy activity logged to `/var/log/tinyproxy/tinyproxy.log`
-
-| Devcontainer | Default |
-|-------------|---------|
-| Claude (Node.js) | Enabled (runs at startup) |
-| Ansible | Disabled (opt-in) |
+When `enableProxy` is `true`, the container starts a Tinyproxy forward proxy enforced by nftables rules. All outbound traffic is routed through the proxy, and direct connections are blocked. HTTPS CONNECT requests are filtered by domain against an allowlist.
 
 **Commands:**
-```bash
-# Enable proxy sandbox
-sudo /usr/local/bin/init-proxy.sh
 
+```bash
 # Check status
 sudo /usr/local/bin/init-proxy.sh --status
 
-# Disable proxy sandbox
+# Disable the sandbox
 sudo /usr/local/bin/init-proxy.sh --disable
+
+# Re-enable the sandbox
+sudo /usr/local/bin/init-proxy.sh
 ```
 
-**Adding domains to the allowlist:**
+**Editing the allowlist:**
 
-Edit `/etc/tinyproxy/allowlist` inside the container and restart tinyproxy:
+The runtime allowlist is at `/etc/tinyproxy/allowlist` (one regex pattern per line). To add a domain temporarily:
+
 ```bash
 echo 'newdomain\.example\.com' >> /etc/tinyproxy/allowlist
 sudo pkill tinyproxy && sudo tinyproxy -c /etc/tinyproxy/tinyproxy.conf
 ```
 
-To make changes permanent, edit `proxy-allowlist.txt` in the devcontainer directory and rebuild.
+To make the change permanent, edit `proxy-allowlist.txt` in the template source under `src/` and rebuild the container.
 
-### IP Firewall (Legacy)
+Proxy logs are written to `/var/log/tinyproxy/tinyproxy.log`.
 
-The original IP-based firewall resolves domain names to IPs at startup. Kept as a fallback:
-```bash
-sudo /usr/local/bin/init-firewall.sh          # Enable
-sudo /usr/local/bin/init-firewall.sh --status  # Check status
-sudo /usr/local/bin/init-firewall.sh --disable # Disable
-```
+## Contributing
 
-## Requirements
-
-- VS Code with Dev Containers extension
-- Podman or Docker
-- Git
-
-## Customization
-
-Modify the devcontainer configuration to add:
-- Additional VS Code extensions
-- Custom environment variables
-- Port forwarding
-- Volume mounts
-- Initialization scripts
-
-## Troubleshooting
-
-**Network connectivity issues:**
-- Check proxy status: `sudo /usr/local/bin/init-proxy.sh --status`
-- Check proxy logs: `cat /var/log/tinyproxy/tinyproxy.log`
-- Temporarily disable sandbox: `sudo /usr/local/bin/init-proxy.sh --disable`
-- If a domain is blocked, add it to `/etc/tinyproxy/allowlist` and restart tinyproxy
+1. Fork the repository.
+2. Make changes in the `src/` directory.
+3. Test locally with `devcontainer templates apply` or by opening the template in VS Code.
+4. Open a pull request.
 
 ## License
 
-MIT
+GPL-3.0

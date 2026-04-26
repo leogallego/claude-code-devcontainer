@@ -1,0 +1,29 @@
+{
+  "id": "claude-code",
+  "version": "1.0.0",
+  "name": "Claude Code (Node.js)",
+  "description": "Node.js development environment with Claude Code CLI, proxy sandbox, zsh, and git-delta",
+  "documentationURL": "https://github.com/leogallego/claude-code-devcontainer/tree/main/src/claude-code",
+  "licenseURL": "https://github.com/leogallego/claude-code-devcontainer/blob/main/LICENSE",
+  "options": {
+    "claudeCodeVersion": {
+      "type": "string",
+      "description": "Claude Code version to install",
+      "proposals": ["latest"],
+      "default": "latest"
+    },
+    "timezone": {
+      "type": "string",
+      "description": "Container timezone (TZ)",
+      "proposals": ["America/Los_Angeles", "America/New_York", "Europe/London", "UTC"],
+      "default": "America/Argentina/Buenos_Aires"
+    },
+    "enableProxy": {
+      "type": "boolean",
+      "description": "Enable Tinyproxy + nftables proxy sandbox for domain-level network filtering",
+      "default": "true"
+    }
+  },
+  "keywords": ["claude", "claude-code", "anthropic", "ai", "nodejs", "proxy", "sandbox"],
+  "platforms": ["Any"]
+}

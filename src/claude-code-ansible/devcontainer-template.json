@@ -1,0 +1,29 @@
+{
+  "id": "claude-code-ansible",
+  "version": "1.0.0",
+  "name": "Ansible Development (Claude Code)",
+  "description": "Ansible development environment with Claude Code CLI, ansible-lint, molecule, and proxy sandbox",
+  "documentationURL": "https://github.com/leogallego/claude-code-devcontainer/tree/main/src/claude-code-ansible",
+  "licenseURL": "https://github.com/leogallego/claude-code-devcontainer/blob/main/LICENSE",
+  "options": {
+    "claudeCodeVersion": {
+      "type": "string",
+      "description": "Claude Code version to install",
+      "proposals": ["latest"],
+      "default": "latest"
+    },
+    "timezone": {
+      "type": "string",
+      "description": "Container timezone (TZ)",
+      "proposals": ["America/Los_Angeles", "America/New_York", "Europe/London", "UTC"],
+      "default": "America/Argentina/Buenos_Aires"
+    },
+    "enableProxy": {
+      "type": "boolean",
+      "description": "Enable Tinyproxy + nftables proxy sandbox for domain-level network filtering",
+      "default": "true"
+    }
+  },
+  "keywords": ["claude", "claude-code", "anthropic", "ai", "ansible", "redhat", "proxy", "sandbox"],
+  "platforms": ["Any"]
+}
